@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレンダー家計簿アプリ</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css' rel='stylesheet' />
+</head>
+<body>
+    <header>
+        <h1>カレンダー家計簿アプリ</h1>
+        <nav>
+            <ul>
+                <li><a href="#calendar-page" class="nav-link active" data-page="calendar-page">カレンダー/タスク</a></li>
+                <li><a href="#summary-page" class="nav-link" data-page="summary-page">家計簿サマリー</a></li>
+                <li><a href="#detail-page" class="nav-link" data-page="detail-page">費用詳細/履歴</a></li>
+            </ul>
+        </nav>
+        <div id="notification-area">
+            <!-- 購入サポート通知などが表示されるエリア -->
+        </div>
+    </header>
+
+    <main>
+        <section id="calendar-page" class="page active">
+            <h2>カレンダー & タスク管理</h2>
+            <!-- ここにカレンダーが表示される -->
+            <div id="calendar"></div>
+            <button id="print-button">カレンダーを印刷</button>
+            <!-- タスク追加/編集モーダルは後でJSで生成 -->
+        </section>
+
+        <section id="summary-page" class="page">
+            <h2>家計簿サマリー</h2>
+            <!-- ここに収入、固定費、変動費のサマリーが表示される -->
+            <div id="income-form-section">
+                <h3>収入入力</h3>
+                <form id="add-income-form">
+                    <label for="income-date">日付:</label>
+                    <input type="date" id="income-date" required>
+                    <label for="income-amount">金額:</label>
+                    <input type="number" id="income-amount" required min="1">
+                    <label for="income-description">摘要:</label>
+                    <input type="text" id="income-description" placeholder="例: 給与">
+                    <button type="submit">収入を追加</button>
+                </form>
+            </div>
+            <hr> <!-- 区切り線 -->
+            <div id="income-summary"></div>
+            <div id="fixed-cost-summary"></div>
+            <div id="variable-cost-summary"></div>
+            <div id="budget-setting"></div>
+        </section>
+
+        <section id="detail-page" class="page">
+            <h2>費用詳細入力 & 履歴</h2>
+            <!-- ここに費用入力フォームと履歴が表示される -->
+            <div id="expense-form">
+                <h3 id="expense-form-title">費用入力</h3>
+                <form id="expense-entry-form"> <!-- IDを変更して汎用的に -->
+                    <input type="hidden" id="expense-id"> <!-- 編集用ID -->
+                    <label for="expense-date">日付:</label>
+                    <input type="date" id="expense-date" required>
+
+                    <label for="expense-category">カテゴリ:</label>
+                    <select id="expense-category" required>
+                        <option value="">選択してください</option>
+                        <option value="食費">食費</option>
+                        <option value="日用品">日用品</option>
+                        <option value="病院代">病院代</option>
+                        <option value="交通費">交通費</option>
+                        <option value="娯楽">娯楽</option>
+                        <option value="固定費">固定費</option> <!-- 固定費もここで入力できるようにするか検討 -->
+                        <option value="その他雑費">その他雑費</option>
+                        <!-- TODO: カテゴリを動的に追加/編集できるようにする -->
+                    </select>
+
+                    <label for="expense-item">品名:</label>
+                    <input type="text" id="expense-item" placeholder="例: 牛乳">
+
+                    <label for="expense-amount">金額:</label>
+                    <input type="number" id="expense-amount" placeholder="例: 200" required min="0">
+
+                    <label for="expense-store">購入店:</label>
+                    <input type="text" id="expense-store" placeholder="例: スーパーA">
+
+                    <div class="form-buttons">
+                        <button type="submit" id="add-expense-button">費用を追加</button>
+                        <button type="submit" id="update-expense-button" class="hidden">費用を更新</button> <!-- 初期状態は非表示 -->
+                        <button type="button" id="cancel-edit-button" class="hidden">キャンセル</button> <!-- 初期状態は非表示 -->
+                    </div>
+                </form>
+            </div>
+
+            <div id="expense-history">
+                <h3>費用履歴</h3>
+                <!-- TODO: 検索・フィルタリング機能を追加 -->
+                <table id="expense-table">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>カテゴリ</th>
+                            <th>品名</th>
+                            <th>金額</th>
+                            <th>購入店</th>
+                            <th>操作</th> <!-- 編集・削除ボタン用 -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- ここに履歴データがJSで挿入される -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 カレンダー家計簿アプリ</p>
+    </footer>
+
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/ja.js'></script> <!-- 日本語化 -->
+    <script src="script.js"></script>
+</body>
+</html>

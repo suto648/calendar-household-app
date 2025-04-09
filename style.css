@@ -1,0 +1,451 @@
+/* 基本的なスタイルやページ切り替えのスタイルを後で記述 */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    padding-bottom: 0.5rem;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+    background-color: #444;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    display: block;
+}
+
+nav a:hover,
+nav a.active {
+    background-color: #555;
+    font-weight: bold;
+}
+
+#notification-area {
+    margin: 10px auto; /* 中央寄せ */
+    padding: 10px;
+    background-color: lightyellow;
+    border: 1px solid gold;
+    min-height: 20px; /* 通知がない場合でも高さを確保 */
+    max-width: 800px; /* 幅を制限 */
+    text-align: center; /* テキストを中央寄せ */
+}
+
+main {
+    padding: 1rem;
+    max-width: 1000px; /* コンテンツ幅を制限 */
+    margin: 1rem auto; /* 中央寄せ */
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.page {
+    display: none; /* 初期状態では非表示 */
+    padding: 1rem;
+    border: 1px solid #ddd;
+    margin-top: 1rem;
+}
+
+.page.active {
+    display: block; /* アクティブなページのみ表示 */
+}
+
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    color: #777;
+    font-size: 0.9em;
+}
+
+button {
+    padding: 0.5em 1em;
+    cursor: pointer;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+#print-button {
+    margin-top: 1rem;
+}
+
+/* カレンダーやフォームのスタイルは後で追加 */
+
+/* FullCalendarの祝日スタイル */
+.fc-daygrid-event.holiday {
+    background-color: #ffebee; /* 薄い赤系の背景 */
+    border-color: #e57373; /* 少し濃い赤系のボーダー */
+}
+
+.fc-daygrid-event.holiday .fc-event-title {
+    color: #c62828; /* 濃い赤色の文字 */
+    font-weight: bold;
+}
+
+/* カレンダーの日付自体のスタイル（オプション） */
+/* .fc-day-sun { background-color: #fff0f0; } /* 日曜日の背景 */
+/* .fc-day-sat { background-color: #f0f0ff; } /* 土曜日の背景 */
+
+
+/* 費用入力フォームのスタイル */
+#expense-form {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+#expense-form h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+
+#add-expense-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+#add-expense-form input[type="text"],
+#add-expense-form input[type="date"],
+#add-expense-form input[type="number"],
+#add-expense-form select {
+    width: calc(100% - 22px); /* paddingとborderを考慮 */
+    padding: 10px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* width計算にpaddingとborderを含む */
+}
+
+#add-expense-form button[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+#add-expense-form button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* 費用履歴テーブルのスタイル */
+#expense-history {
+    margin-top: 2rem;
+}
+
+#expense-history h3 {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+
+#expense-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+#expense-table th,
+#expense-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#expense-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+#expense-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#expense-table tbody tr:hover {
+    background-color: #e9e9e9;
+}
+
+#expense-table .action-buttons button {
+    padding: 3px 6px;
+    margin-right: 5px;
+    font-size: 0.8em;
+}
+
+#expense-table .edit-button {
+    background-color: #ffc107; /* 黄色 */
+    color: #333;
+}
+#expense-table .edit-button:hover {
+    background-color: #e0a800;
+}
+
+#expense-table .delete-button {
+    background-color: #dc3545; /* 赤色 */
+}
+#expense-table .delete-button:hover {
+    background-color: #c82333;
+}
+
+
+/* フォームボタンの共通スタイル */
+#expense-entry-form .form-buttons {
+    display: flex;
+    gap: 10px; /* ボタン間のスペース */
+    margin-top: 1rem;
+}
+
+#expense-entry-form .form-buttons button {
+    flex-grow: 1; /* ボタンが均等に幅を取るように */
+    padding: 10px;
+    font-size: 1em;
+}
+
+/* 更新ボタンのスタイル */
+#update-expense-button {
+    background-color: #ffc107; /* 黄色 */
+    color: #333;
+}
+#update-expense-button:hover {
+    background-color: #e0a800;
+}
+
+/* キャンセルボタンのスタイル */
+#cancel-edit-button {
+    background-color: #6c757d; /* グレー */
+}
+#cancel-edit-button:hover {
+    background-color: #5a6268;
+}
+
+/* 非表示クラス */
+.hidden {
+    display: none !important; /* 重要度を上げて確実に非表示にする */
+}
+
+
+/* 印刷用スタイル */
+@media print {
+    body {
+        background-color: #fff; /* 背景を白に */
+    }
+
+    header,
+    nav,
+    #notification-area,
+    #summary-page,
+    #detail-page,
+    footer,
+    #print-button,
+    #expense-form,
+    #expense-history,
+    .action-buttons,
+    .form-buttons button:not(#add-expense-button):not(#update-expense-button) /* 印刷に関係ないボタン */
+    {
+        display: none; /* 印刷しない要素を非表示 */
+    }
+
+    main {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border: none;
+    }
+
+    .page {
+        display: none; /* 基本的にページは非表示 */
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    #calendar-page {
+        display: block !important; /* カレンダーページのみ表示 */
+    }
+
+    #calendar {
+        width: 100%; /* カレンダー幅を100%に */
+    }
+
+    /* FullCalendarの印刷用調整 (必要に応じて) */
+    .fc-header-toolbar {
+        /* ヘッダーツールバーも非表示にするか検討 */
+        /* display: none; */
+    }
+
+    .fc-daygrid-day-number {
+        font-size: 10pt; /* 日付の文字サイズ調整 */
+    }
+
+    .fc-event {
+        font-size: 8pt; /* イベントの文字サイズ調整 */
+        /* 必要であれば背景色なども調整 */
+    }
+
+    /* ページ区切りなど */
+    @page {
+        size: A4 landscape; /* 用紙サイズと向き */
+        margin: 1cm; /* 余白 */
+    }
+}
+
+
+/* 収入入力フォームのスタイル */
+#income-form-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+#income-form-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+
+#add-income-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+#add-income-form input[type="text"],
+#add-income-form input[type="date"],
+#add-income-form input[type="number"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#add-income-form button[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745; /* 緑色 */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+#add-income-form button[type="submit"]:hover {
+    background-color: #218838;
+}
+
+/* 予算設定フォームのスタイル */
+#budget-setting {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+#budget-setting h4 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+
+#budget-form label {
+    display: inline-block; /* 横並びにするため */
+    width: 80px; /* ラベル幅を固定 */
+    margin-bottom: 0.8rem;
+    font-weight: bold;
+}
+
+#budget-form input[type="number"] {
+    width: calc(100% - 110px); /* ラベル幅とpadding/borderを考慮 */
+    padding: 8px;
+    margin-bottom: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: inline-block;
+}
+
+#budget-form button[type="submit"] {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 10px;
+    background-color: #17a2b8; /* 青緑色 */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+#budget-form button[type="submit"]:hover {
+    background-color: #138496;
+}
+
+/* サマリー表示のスタイル調整 */
+#income-summary,
+#fixed-cost-summary,
+#variable-cost-summary {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed #eee;
+}
+
+#income-summary h4,
+#fixed-cost-summary h4,
+#variable-cost-summary h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+#variable-cost-summary ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#variable-cost-summary li {
+    margin-bottom: 0.3rem;
+}
