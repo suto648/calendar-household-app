@@ -19,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             request.onsuccess = (event) => {
-                db = event.target.result;
+                // db = event.target.result; // then で受け取るのでここでは不要
                 console.log('IndexedDB opened successfully.');
-                resolve(db);
+                resolve(event.target.result); // dbオブジェクト自体を resolve する
             };
 
             // DBバージョンが古い場合や、DBが存在しない場合に実行
@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // アプリケーション開始時にDBを開く
-    openDB().then(() => {
+    openDB().then((resolvedDb) => { // resolveされたdbオブジェクトを受け取る
+        db = resolvedDb; // グローバル変数にセット (各関数が参照するため)
         // DBが開かれた後にカレンダーのイベントを読み込むなどの処理を行う
         if (calendarInstance) { // カレンダーが初期化済みならイベントを再読み込み
             calendarInstance.refetchEvents();
@@ -66,6 +67,187 @@ document.addEventListener('DOMContentLoaded', () => {
         displayExpenses();
         displaySummary(); // 初期サマリー表示
         checkConsumables(); // 初期チェック
+
+        // --- FullCalendarの初期化 ---
+        const calendarEl = document.getElementById('calendar');
+        if (calendarEl) { // カレンダー要素が存在する場合のみ初期化
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth', // 初期表示を月ビューに
+                locale: 'ja', // 日本語化
+                headerToolbar: { // ヘッダーのボタン設定
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay' // 月/週/日ビュー切り替え
+                },
+                editable: true, // イベントのドラッグ＆ドロップを有効化
+                // --- ここにイベントデータや他の設定を追加していく ---
+                // 例: イベントデータ (後でIndexedDBから読み込むように変更)
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    if (!db) {
+                        console.error("DB is not open yet.");
+                        failureCallback("Database not ready");
+                        return;
+                    }
+                    // Promise.allを使って、タスク、祝日、日付の色を非同期に取得
+                    Promise.all([
+                        // 1. タスクを取得
+                        new Promise((resolve, reject) => {
+                            const taskTransaction = db.transaction(TASK_STORE_NAME, 'readonly');
+                            const taskStore = taskTransaction.objectStore(TASK_STORE_NAME);
+                            const taskRequest = taskStore.getAll();
+                            taskRequest.onsuccess = () => resolve(taskRequest.result);
+                            taskRequest.onerror = (event) => reject(`Failed to fetch tasks: ${event.target.error}`);
+                        }),
+                        // 2. 日付の色を取得
+                        new Promise((resolve, reject) => {
+                            const colorTransaction = db.transaction(DAY_COLOR_STORE_NAME, 'readonly');
+                            const colorStore = colorTransaction.objectStore(DAY_COLOR_STORE_NAME);
+                            const colorRequest = colorStore.getAll();
+                            colorRequest.onsuccess = () => resolve(colorRequest.result);
+                            colorRequest.onerror = (event) => reject(`Failed to fetch day colors: ${event.target.error}`);
+                        })
+                    ]).then(([tasks, dayColors]) => {
+                        // 3. 祝日データ (固定)
+                        const holidays = [
+                            { title: '元日', start: '2025-01-01', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '成人の日', start: '2025-01-13', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '建国記念の日', start: '2025-02-11', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '天皇誕生日', start: '2025-02-23', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '振替休日', start: '2025-02-24', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '春分の日', start: '2025-03-20', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '昭和の日', start: '2025-04-29', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '憲法記念日', start: '2025-05-03', allDay: true, className: 'holiday', display: 'background' },
+                            { title: 'みどりの日', start: '2025-05-04', allDay: true, className: 'holiday', display: 'background' },
+                            { title: 'こどもの日', start: '2025-05-05', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '振替休日', start: '2025-05-06', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '海の日', start: '2025-07-21', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '山の日', start: '2025-08-11', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '敬老の日', start: '2025-09-15', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '秋分の日', start: '2025-09-23', allDay: true, className: 'holiday', display: 'background' },
+                            { title: 'スポーツの日', start: '2025-10-13', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '文化の日', start: '2025-11-03', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '振替休日', start: '2025-11-04', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '勤労感謝の日', start: '2025-11-23', allDay: true, className: 'holiday', display: 'background' },
+                            { title: '振替休日', start: '2025-11-24', allDay: true, className: 'holiday', display: 'background' },
+                        ];
+
+                        // 4. 日付の色情報を背景イベントに変換
+                        const colorEvents = dayColors.map(dc => ({
+                            start: dc.date,
+                            end: dc.date, // 終日背景色なので start と end を同じに
+                            display: 'background',
+                            color: dc.color,
+                            id: `color-${dc.date}` // 識別用ID (任意)
+                        }));
+
+                        // 5. すべてのイベントを結合
+                        const allEvents = [...tasks, ...holidays, ...colorEvents];
+                        successCallback(allEvents);
+
+                    }).catch(error => {
+                        console.error('Failed to fetch events:', error);
+                        failureCallback(error);
+                    });
+                },
+                // --- 日付クリック時の処理 ---
+                dateClick: function(info) {
+                    if (info.dayEl.classList.contains('fc-day-other')) return;
+
+                    const actionChoice = prompt(`日付 ${info.dateStr} の操作を選択:\n1: タスク追加\n2: 色付け/解除`, '1');
+
+                    if (actionChoice === '1') {
+                        // タスク追加
+                        const taskTitle = prompt(`タスクを追加 (${info.dateStr}):`, '');
+                        if (taskTitle && taskTitle.trim() !== '') {
+                            const newTask = {
+                                title: taskTitle.trim(),
+                                start: info.dateStr,
+                                allDay: true
+                            };
+                            addTask(newTask);
+                        }
+                    } else if (actionChoice === '2') {
+                        // 色付け/解除
+                        const colorChoices = {
+                            '1': '#ffcdd2', // ピンク系
+                            '2': '#bbdefb', // 水色系
+                            '3': '#fff9c4', // 黄色系
+                            '4': '#c8e6c9', // 緑系
+                            '0': null      // 色を消す
+                        };
+                        const colorChoice = prompt(`色を選択:\n1: ピンク\n2: 水色\n3: 黄色\n4: 緑\n0: 色を消す`, '1');
+
+                        if (colorChoice !== null && colorChoices.hasOwnProperty(colorChoice)) {
+                            const selectedColor = colorChoices[colorChoice];
+                            setDayColor(info.dateStr, selectedColor);
+                        }
+                    }
+                },
+                // --- イベントクリック時の処理 (編集/削除) ---
+                eventClick: function(info) {
+                    // 背景イベント（祝日など）は無視
+                    if (info.event.display === 'background') {
+                        return;
+                    }
+
+                    const eventId = parseInt(info.event.id); // IndexedDBのIDは数値
+                    const currentTitle = info.event.title;
+
+                    // アクションを選択させる (confirmとpromptを使用)
+                    const action = prompt(`タスク "${currentTitle}"\n編集後のタイトルを入力 (空欄で削除確認):`, currentTitle);
+
+                    if (action === null) {
+                        // キャンセルされた場合
+                        console.log('Edit/Delete cancelled.');
+                    } else if (action.trim() === '') {
+                        // 削除の場合
+                        if (confirm(`タスク "${currentTitle}" を削除しますか？`)) {
+                            deleteTask(eventId);
+                        }
+                    } else if (action.trim() !== currentTitle) {
+                        // 編集の場合
+                        const updatedTask = {
+                            id: eventId,
+                            title: action.trim(),
+                            start: info.event.startStr, // 日付は変更しない
+                            allDay: info.event.allDay
+                        };
+                        updateTask(updatedTask);
+                    }
+                },
+                // --- イベントドラッグ＆ドロップ時の処理 (日付変更) ---
+                eventDrop: function(info) {
+                     // 背景イベント（祝日など）は無視
+                    if (info.event.display === 'background') {
+                        info.revert(); // ドロップを元に戻す
+                        return;
+                    }
+
+                    const eventId = parseInt(info.event.id);
+                    const updatedTask = {
+                        id: eventId,
+                        title: info.event.title,
+                        start: info.event.startStr, // 新しい日付
+                        allDay: info.event.allDay
+                        // 必要であれば終了日(end)も更新
+                    };
+                    console.log(`Task dropped: ID=${eventId}, New Date=${updatedTask.start}`);
+                    updateTask(updatedTask); // DBを更新
+                }
+            });
+            calendarInstance = calendar; // インスタンスを保存
+            calendarInstance.render(); // カレンダーを描画
+            console.log('FullCalendar Initialized.');
+    
+            // DB初期化後に最初のページを表示
+            showPage(initialPageId);
+        } else {
+
+        // DB初期化後に最初のページを表示
+        showPage(initialPageId);
+            console.error('Calendar element (#calendar) not found.');
+        }
+
     }).catch(error => {
         console.error('Failed to open IndexedDB:', error);
         alert('データベースの初期化に失敗しました。アプリが正常に動作しない可能性があります。');
@@ -123,179 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showPage(initialPageId);
 
     // --- 他の初期化コードをここに追加 ---
-    // --- FullCalendarの初期化 ---
-    const calendarEl = document.getElementById('calendar');
-    if (calendarEl) { // カレンダー要素が存在する場合のみ初期化
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth', // 初期表示を月ビューに
-            locale: 'ja', // 日本語化
-            headerToolbar: { // ヘッダーのボタン設定
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay' // 月/週/日ビュー切り替え
-            },
-            editable: true, // イベントのドラッグ＆ドロップを有効化
-            // --- ここにイベントデータや他の設定を追加していく ---
-            // 例: イベントデータ (後でIndexedDBから読み込むように変更)
-            events: function(fetchInfo, successCallback, failureCallback) {
-                if (!db) {
-                    console.error("DB is not open yet.");
-                    failureCallback("Database not ready");
-                    return;
-                }
-                // Promise.allを使って、タスク、祝日、日付の色を非同期に取得
-                Promise.all([
-                    // 1. タスクを取得
-                    new Promise((resolve, reject) => {
-                        const taskTransaction = db.transaction(TASK_STORE_NAME, 'readonly');
-                        const taskStore = taskTransaction.objectStore(TASK_STORE_NAME);
-                        const taskRequest = taskStore.getAll();
-                        taskRequest.onsuccess = () => resolve(taskRequest.result);
-                        taskRequest.onerror = (event) => reject(`Failed to fetch tasks: ${event.target.error}`);
-                    }),
-                    // 2. 日付の色を取得
-                    new Promise((resolve, reject) => {
-                        const colorTransaction = db.transaction(DAY_COLOR_STORE_NAME, 'readonly');
-                        const colorStore = colorTransaction.objectStore(DAY_COLOR_STORE_NAME);
-                        const colorRequest = colorStore.getAll();
-                        colorRequest.onsuccess = () => resolve(colorRequest.result);
-                        colorRequest.onerror = (event) => reject(`Failed to fetch day colors: ${event.target.error}`);
-                    })
-                ]).then(([tasks, dayColors]) => {
-                    // 3. 祝日データ (固定)
-                    const holidays = [
-                        { title: '元日', start: '2025-01-01', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '成人の日', start: '2025-01-13', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '建国記念の日', start: '2025-02-11', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '天皇誕生日', start: '2025-02-23', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '振替休日', start: '2025-02-24', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '春分の日', start: '2025-03-20', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '昭和の日', start: '2025-04-29', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '憲法記念日', start: '2025-05-03', allDay: true, className: 'holiday', display: 'background' },
-                        { title: 'みどりの日', start: '2025-05-04', allDay: true, className: 'holiday', display: 'background' },
-                        { title: 'こどもの日', start: '2025-05-05', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '振替休日', start: '2025-05-06', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '海の日', start: '2025-07-21', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '山の日', start: '2025-08-11', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '敬老の日', start: '2025-09-15', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '秋分の日', start: '2025-09-23', allDay: true, className: 'holiday', display: 'background' },
-                        { title: 'スポーツの日', start: '2025-10-13', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '文化の日', start: '2025-11-03', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '振替休日', start: '2025-11-04', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '勤労感謝の日', start: '2025-11-23', allDay: true, className: 'holiday', display: 'background' },
-                        { title: '振替休日', start: '2025-11-24', allDay: true, className: 'holiday', display: 'background' },
-                    ];
-
-                    // 4. 日付の色情報を背景イベントに変換
-                    const colorEvents = dayColors.map(dc => ({
-                        start: dc.date,
-                        end: dc.date, // 終日背景色なので start と end を同じに
-                        display: 'background',
-                        color: dc.color,
-                        id: `color-${dc.date}` // 識別用ID (任意)
-                    }));
-
-                    // 5. すべてのイベントを結合
-                    const allEvents = [...tasks, ...holidays, ...colorEvents];
-                    successCallback(allEvents);
-
-                }).catch(error => {
-                    console.error('Failed to fetch events:', error);
-                    failureCallback(error);
-                });
-            },
-            // --- 日付クリック時の処理 ---
-            dateClick: function(info) {
-                if (info.dayEl.classList.contains('fc-day-other')) return;
-
-                const actionChoice = prompt(`日付 ${info.dateStr} の操作を選択:\n1: タスク追加\n2: 色付け/解除`, '1');
-
-                if (actionChoice === '1') {
-                    // タスク追加
-                    const taskTitle = prompt(`タスクを追加 (${info.dateStr}):`, '');
-                    if (taskTitle && taskTitle.trim() !== '') {
-                        const newTask = {
-                            title: taskTitle.trim(),
-                            start: info.dateStr,
-                            allDay: true
-                        };
-                        addTask(newTask);
-                    }
-                } else if (actionChoice === '2') {
-                    // 色付け/解除
-                    const colorChoices = {
-                        '1': '#ffcdd2', // ピンク系
-                        '2': '#bbdefb', // 水色系
-                        '3': '#fff9c4', // 黄色系
-                        '4': '#c8e6c9', // 緑系
-                        '0': null      // 色を消す
-                    };
-                    const colorChoice = prompt(`色を選択:\n1: ピンク\n2: 水色\n3: 黄色\n4: 緑\n0: 色を消す`, '1');
-
-                    if (colorChoice !== null && colorChoices.hasOwnProperty(colorChoice)) {
-                        const selectedColor = colorChoices[colorChoice];
-                        setDayColor(info.dateStr, selectedColor);
-                    }
-                }
-            },
-            // --- イベントクリック時の処理 (編集/削除) ---
-            eventClick: function(info) {
-                // 背景イベント（祝日など）は無視
-                if (info.event.display === 'background') {
-                    return;
-                }
-
-                const eventId = parseInt(info.event.id); // IndexedDBのIDは数値
-                const currentTitle = info.event.title;
-
-                // アクションを選択させる (confirmとpromptを使用)
-                const action = prompt(`タスク "${currentTitle}"\n編集後のタイトルを入力 (空欄で削除確認):`, currentTitle);
-
-                if (action === null) {
-                    // キャンセルされた場合
-                    console.log('Edit/Delete cancelled.');
-                } else if (action.trim() === '') {
-                    // 削除の場合
-                    if (confirm(`タスク "${currentTitle}" を削除しますか？`)) {
-                        deleteTask(eventId);
-                    }
-                } else if (action.trim() !== currentTitle) {
-                    // 編集の場合
-                    const updatedTask = {
-                        id: eventId,
-                        title: action.trim(),
-                        start: info.event.startStr, // 日付は変更しない
-                        allDay: info.event.allDay
-                    };
-                    updateTask(updatedTask);
-                }
-            },
-            // --- イベントドラッグ＆ドロップ時の処理 (日付変更) ---
-            eventDrop: function(info) {
-                 // 背景イベント（祝日など）は無視
-                if (info.event.display === 'background') {
-                    info.revert(); // ドロップを元に戻す
-                    return;
-                }
-
-                const eventId = parseInt(info.event.id);
-                const updatedTask = {
-                    id: eventId,
-                    title: info.event.title,
-                    start: info.event.startStr, // 新しい日付
-                    allDay: info.event.allDay
-                    // 必要であれば終了日(end)も更新
-                };
-                console.log(`Task dropped: ID=${eventId}, New Date=${updatedTask.start}`);
-                updateTask(updatedTask); // DBを更新
-            }
-        });
-        calendarInstance = calendar; // インスタンスを保存
-        calendarInstance.render(); // カレンダーを描画
-        console.log('FullCalendar Initialized.');
-    } else {
-        console.error('Calendar element (#calendar) not found.');
-    }
 
 
     console.log('Calendar Household App Initialized.');
@@ -617,6 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayExpenses() {
         if (!db || !expenseTableBody) {
+            console.warn('displayExpenses: DB not ready or table body not found. Aborting.');
             // DBが開いていないか、テーブル要素が見つからない場合は何もしない
             // (ページがアクティブでない場合など)
             return;
